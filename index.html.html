@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundCanvas Studio - Audio Synthesizer & Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Force single page viewport fit without scrolling */
+        html, body {
+            height: 100%;
+            max-height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(55, 65, 81, 0.5);
+        }
+
+        /* Pulse glow for active step highlight */
+        .step-pulse {
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.6);
+        }
+
+        /* Feature guide badge styling */
+        .guide-tag {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-100 h-screen w-screen flex flex-col selection:bg-pink-500 selection:text-white">
+
+    <!-- Modal for Custom Alert Message -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-sm w-full rounded-2xl p-6 border border-slate-700 shadow-2xl text-center space-y-4">
+            <div id="modal-icon" class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 mx-auto flex items-center justify-center">
+                <i data-lucide="info" class="w-6 h-6"></i>
+            </div>
+            <h3 id="modal-title" class="font-bold text-lg text-white">알림</h3>
+            <p id="modal-msg" class="text-xs text-slate-300 leading-relaxed">메시지 내용</p>
+            <button onclick="closeModal()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition-all">확인</button>
+        </div>
+    </div>
+
+    <!-- Step Pitch Selection Popover Modal -->
+    <div id="pitch-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closePitchModal(event)">
+        <div class="glass-card max-w-xs w-full rounded-2xl p-4 border border-indigo-500/40 shadow-2xl space-y-3" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div class="flex items-center space-x-1.5 text-indigo-400 font-bold text-xs">
+                    <i data-lucide="music" class="w-4 h-4"></i>
+                    <span id="pitch-modal-title">스텝 음계(코드) 지정</span>
+                </div>
+                <button onclick="closePitchModal()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            
+            <p class="text-[10px] text-slate-400">선택한 비트 칸의 독립된 음계를 지정하세요:</p>
+            
+            <!-- Octave Selector -->
+            <div class="flex items-center justify-between bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-xs">
+                <span class="text-[10px] text-slate-400 font-mono">옥타브:</span>
+                <div class="flex space-x-1">
+                    <button onclick="setModalOctave(1)" id="m-oct-1" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono">1 (저음)</button>
+                    <button onclick="setModalOctave(2)" id="m-oct-2" class="px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono">2 (중음)</button>
+                    <button onclick="setModalOctave(3)" id="m-oct-3" class="px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono">3 (고음)</button>
+                </div>
+            </div>
+
+            <!-- Note Buttons Grid -->
+            <div class="grid grid-cols-4 gap-1.5 font-mono text-xs">
+                <button onclick="assignNoteToStep('C')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">C (도)</button>
+                <button onclick="assignNoteToStep('C#')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-indigo-400">C#</button>
+                <button onclick="assignNoteToStep('D')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">D (레)</button>
+                <button onclick="assignNoteToStep('D#')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-indigo-400">D#</button>
+                <button onclick="assignNoteToStep('E')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">E (미)</button>
+                <button onclick="assignNoteToStep('F')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">F (파)</button>
+                <button onclick="assignNoteToStep('F#')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-indigo-400">F#</button>
+                <button onclick="assignNoteToStep('G')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">G (솔)</button>
+                <button onclick="assignNoteToStep('G#')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-indigo-400">G#</button>
+                <button onclick="assignNoteToStep('A')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">A (라)</button>
+                <button onclick="assignNoteToStep('A#')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-indigo-400">A#</button>
+                <button onclick="assignNoteToStep('B')" class="py-2 bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-400 rounded-lg text-center font-bold text-slate-200">B (시)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Compact Navigation Header (Height Fixed) -->
+    <header class="h-14 border-b border-slate-800 bg-slate-900/90 px-5 flex justify-between items-center shrink-0 z-30">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 flex items-center justify-center font-bold text-white shadow-md shadow-pink-500/20">
+                <i data-lucide="disc" class="w-4 h-4 animate-spin-slow"></i>
+            </div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-sm font-bold tracking-tight bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-300 bg-clip-text text-transparent">SoundCanvas Studio</h1>
+                <span class="text-[9px] bg-pink-500/10 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full font-mono uppercase">Single-Screen Lab</span>
+            </div>
+        </div>
+
+        <!-- Header Global Controls -->
+        <div class="flex items-center space-x-3">
+            <!-- Guide On/Off Toggle Button -->
+            <button id="btn-guide-toggle" onclick="toggleGuideMode()" class="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
+                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                <span id="guide-toggle-text">가이드 ON</span>
+            </button>
+
+            <!-- Dynamic Step Count Selector -->
+            <div class="flex items-center space-x-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 font-mono">박자(스텝):</span>
+                <select id="step-count-select" onchange="changeStepCount(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-pink-400 font-mono font-bold rounded px-1.5 py-0.5 focus:outline-none">
+                    <option value="4">4 스텝 (왕초보/큰 칸)</option>
+                    <option value="8">8 스텝 (중간 크기)</option>
+                    <option value="12">12 스텝 (3/4 박자)</option>
+                    <option value="16" selected>16 스텝 (기본)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 font-mono">BPM:</span>
+                <input type="range" id="bpm-slider" min="60" max="190" value="120" oninput="updateBPM(this.value)" class="w-16 accent-pink-500 cursor-pointer">
+                <span id="bpm-val" class="text-xs font-mono text-pink-400 font-bold w-6 text-right">120</span>
+                <button onclick="handleTapTempo()" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[9px] font-mono border border-slate-700 transition-all" title="박자에 맞춰 클릭 시 속도 자동 설정">TAP</button>
+            </div>
+
+            <button id="btn-play" onclick="togglePlay()" class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-pink-600/30 transition-all">
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i> <span id="play-btn-text">재생</span>
+            </button>
+
+            <button onclick="exportPattern()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs border border-slate-700 transition-all" title="패턴 내보내기">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            </button>
+
+            <button onclick="importPattern()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs border border-slate-700 transition-all" title="패턴 불러오기">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            </button>
+
+            <button onclick="clearGrid()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs border border-slate-700 transition-all" title="비트 전체 초기화">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Viewport Area (Zero Scroll, Flex-1) -->
+    <main class="flex-grow p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 h-[calc(100vh-3.5rem)] overflow-hidden">
+
+        <!-- Left Column: 16-Step Sequencer & Individual Track Mixers (8/12 width) -->
+        <section class="lg:col-span-8 flex flex-col gap-3 h-full overflow-hidden">
+            <!-- 16-Step Beat Sequencer Card (Flex-1) -->
+            <div class="glass-card rounded-2xl p-3 border border-slate-800 flex flex-col justify-between flex-1 overflow-hidden">
+                <div class="flex items-center justify-between pb-1.5 border-b border-slate-800/80">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="sliders" class="w-3.5 h-3.5 text-pink-400"></i> 7-트랙 인터랙티브 비트 패널
+                        </h2>
+                        <span class="guide-tag text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 font-semibold">💡 좌클릭: 켜기/끄기 | 우클릭: 칸별 코드/음계 변경</span>
+                    </div>
+                    
+                    <!-- Presets -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-slate-400">장르 추천 비트:</span>
+                        <select onchange="loadPreset(this.value)" class="bg-slate-950 border border-slate-800 text-[11px] text-slate-200 rounded-lg px-2 py-0.5 focus:outline-none focus:border-pink-500">
+                            <option value="empty">빈 패턴</option>
+                            <option value="basic" selected>베이직 기본 리듬</option>
+                            <option value="hiphop">힙합 / 트랩 스타일</option>
+                            <option value="house">신나는 하우스 비트</option>
+                            <option value="synthwave">80년대 신스웨이브</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 16 Step Header Step Indicators -->
+                <div id="step-header-grid" class="flex items-center space-x-1 text-center font-mono text-[9px] text-slate-500 py-1">
+                    <div class="w-48 text-left pl-1 font-sans text-slate-400 flex items-center justify-between shrink-0">
+                        <span>악기 트랙 / 음계 설정</span>
+                        <span class="guide-tag text-[8px] text-amber-400 font-mono">(M/S)</span>
+                    </div>
+                    <div id="step-markers-container" class="flex-1 grid gap-1">
+                        <!-- Step Markers rendered dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Sequencer Rows Container (Fit dynamically) -->
+                <div id="sequencer-rows" class="flex-1 flex flex-col justify-around gap-1 py-0.5 overflow-hidden">
+                    <!-- Dynamic Instrument Rows Inserted by JS -->
+                </div>
+            </div>
+
+            <!-- Synthesizer Quick Note Keyboard -->
+            <div class="glass-card rounded-2xl p-2.5 border border-slate-800 shrink-0">
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="music" class="w-3.5 h-3.5 text-indigo-400"></i> 16칸 개별 음계(코드) 설정 및 건반 연주
+                        </h3>
+                        <span class="guide-tag text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 font-semibold">💡 트랙과 편집할 칸(스텝)을 선택 후 건반을 누르면 해당 칸의 음계가 지정됩니다!</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-slate-400">편집할 칸(스텝):</span>
+                        <select id="active-step-select" onchange="changeActiveStep(this.value)" class="bg-slate-950 text-pink-400 border border-pink-500/30 text-xs rounded px-2 py-0.5 font-mono font-bold">
+                            <!-- Populated dynamically (Step 1~16) -->
+                        </select>
+
+                        <select id="target-track-select" onchange="changeTargetTrack(this.value)" class="bg-slate-950 text-indigo-300 border border-indigo-500/30 text-xs rounded px-2 py-0.5 font-bold">
+                            <option value="5">Bass Synth 트랙</option>
+                            <option value="6">FM Lead 트랙</option>
+                        </select>
+
+                        <span class="text-[10px] text-slate-400">옥타브:</span>
+                        <button onclick="setOctave(1)" id="oct-1" class="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono">1 (저음)</button>
+                        <button onclick="setOctave(2)" id="oct-2" class="px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono">2 (중음)</button>
+                        <button onclick="setOctave(3)" id="oct-3" class="px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono">3 (고음)</button>
+                    </div>
+                </div>
+
+                <!-- 16-Step Pitch Quick Inspector Bar -->
+                <div class="mb-2 p-1.5 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span class="text-[10px] text-indigo-400 font-mono font-bold shrink-0 w-24">16칸 음계 현황:</span>
+                    <div id="step-notes-inspector" class="flex-1 grid gap-1 font-mono text-[9px]">
+                        <!-- Rendered by JS: Individual note pills for each of the 16 steps -->
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-12 gap-1">
+                    <button onclick="selectNote('C')" id="note-C" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">C</button>
+                    <button onclick="selectNote('C#')" id="note-C#" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-indigo-400 font-bold">C#</button>
+                    <button onclick="selectNote('D')" id="note-D" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">D</button>
+                    <button onclick="selectNote('D#')" id="note-D#" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-indigo-400 font-bold">D#</button>
+                    <button onclick="selectNote('E')" id="note-E" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">E</button>
+                    <button onclick="selectNote('F')" id="note-F" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">F</button>
+                    <button onclick="selectNote('F#')" id="note-F#" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-indigo-400 font-bold">F#</button>
+                    <button onclick="selectNote('G')" id="note-G" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">G</button>
+                    <button onclick="selectNote('G#')" id="note-G#" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-indigo-400 font-bold">G#</button>
+                    <button onclick="selectNote('A')" id="note-A" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">A</button>
+                    <button onclick="selectNote('A#')" id="note-A#" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-indigo-400 font-bold">A#</button>
+                    <button onclick="selectNote('B')" id="note-B" class="note-btn py-1.5 bg-slate-950 hover:bg-indigo-900/40 border border-slate-800 rounded-lg text-center font-mono text-xs font-semibold text-slate-300">B</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Visualizer & Live Monitor (4/12 width) -->
+        <section class="lg:col-span-4 flex flex-col gap-3 h-full overflow-hidden">
+            <!-- Canvas Visualizer Card (Flex-1) -->
+            <div class="glass-card rounded-2xl p-3 border border-slate-800 flex flex-col justify-between flex-1 overflow-hidden">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-purple-400"></i> 오디오 실시간 이퀄라이저
+                    </h2>
+                    <span id="audio-status" class="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-mono">대기중</span>
+                </div>
+
+                <!-- Canvas Visualizer Container -->
+                <div class="relative w-full flex-1 my-2 bg-slate-950 rounded-xl overflow-hidden border border-slate-800/80 min-h-[130px]">
+                    <canvas id="visualizer-canvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Master Volume Control & Status Monitor -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-[11px] bg-slate-950/60 px-3 py-1.5 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 flex items-center gap-1"><i data-lucide="volume-2" class="w-3 h-3"></i> 전체 소리 크기</span>
+                        <input type="range" id="master-vol" min="0" max="1" step="0.05" value="0.8" oninput="updateMasterVol(this.value)" class="w-24 accent-purple-500 cursor-pointer">
+                        <span id="vol-val" class="font-mono text-purple-400 text-xs w-8 text-right font-bold">80%</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400 bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                        <div class="space-y-0.5">
+                            <span class="text-[9px] text-slate-500 block uppercase font-mono">재생 상태</span>
+                            <span id="playing-state-text" class="text-slate-200 font-mono font-medium">Ready</span>
+                        </div>
+                        <div class="space-y-0.5 text-right">
+                            <span class="text-[9px] text-slate-500 block uppercase font-mono">현재 템포 위치</span>
+                            <span id="current-step-text" class="text-pink-400 font-mono font-medium">Step 1 / 16</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ethics & Engine Info Card -->
+            <div class="glass-card rounded-2xl p-3 border border-slate-800 text-[11px] text-slate-400 space-y-1 shrink-0">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-1.5 text-amber-400 font-bold text-xs">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>빠른 사용 안내</span>
+                    </div>
+                </div>
+                <p class="leading-tight text-[10px] text-slate-400">
+                    상단 <b>'가이드 ON/OFF'</b> 버튼으로 각 버튼과 트랙의 자세한 기능 설명을 켜거나 끌 수 있습니다. 원하는 악기 스텝을 찍고 재생 버튼을 누르세요!
+                </p>
+            </div>
+        </section>
+    </main>
+
+<script>
+    // Lucide Icons Init
+    lucide.createIcons();
+
+    // Guide Mode State
+    let guideModeActive = true;
+    let totalSteps = 16;
+    let selectedTrackIdx = 5; // Default synth track target
+    let activeStepIdx = 0; // Currently targeted step for pitch assignment
+
+    // Instrument Definitions
+    const INSTRUMENTS = [
+        { id: 'kick', name: 'Kick', desc: '둥둥 깊은 쿵 소리(쿵)', color: '#ec4899', pitch: 130, muted: false, solo: false },
+        { id: 'snare', name: 'Snare', desc: '탁 치는 찰진 소리(딱)', color: '#a855f7', pitch: 200, muted: false, solo: false },
+        { id: 'hihat', name: 'Hi-Hat', desc: '쉭쉭 얇은 쇠소리(츳)', color: '#06b6d4', pitch: 7000, muted: false, solo: false },
+        { id: 'clap', name: 'Clap', desc: '짝 박수 소리(짝)', color: '#f59e0b', pitch: 400, muted: false, solo: false },
+        { id: 'tom', name: 'Tom', desc: '탐탐 울리는 둔탁한 소리', color: '#10b981', pitch: 90, muted: false, solo: false },
+        { id: 'synth', name: 'Bass Synth', desc: '묵직한 저음 신디사이저', color: '#6366f1', pitch: 65, muted: false, solo: false, pitchable: true, currentNote: 'C1' },
+        { id: 'lead', name: 'FM Lead', desc: '화려한 멜로디 이끄는 음성', color: '#3b82f6', pitch: 440, muted: false, solo: false, pitchable: true, currentNote: 'C2' }
+    ];
+
+    // Note Frequencies Table
+    const NOTE_FREQS = {
+        'C': 130.81, 'C#': 138.59, 'D': 146.83, 'D#': 155.56,
+        'E': 164.81, 'F': 174.61, 'F#': 185.00, 'G': 196.00,
+        'G#': 207.65, 'A': 220.00, 'A#': 233.08, 'B': 246.94
+    };
+    let currentOctave = 1;
+    let selectedNote = 'C';
+
+    // Step-by-Step Pitch Overrides
+    let stepPitchGrid = Array(INSTRUMENTS.length).fill(null).map(() => Array(16).fill(null));
+
+    // Modal Target State
+    let targetInstIdx = null;
+    let targetStepIdx = null;
+    let modalOctave = 1;
+
+    // App Player State
+    let isPlaying = false;
+    let currentStep = 0;
+    let bpm = 120;
+    let timerId = null;
+    let masterGainNode = null;
+    let lastTapTime = 0;
+
+    // Sequencer Grid Matrix
+    let grid = Array(INSTRUMENTS.length).fill(null).map(() => Array(16).fill(false));
+
+    // Audio Context
+    let audioCtx = null;
+    let analyser = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        renderStepMarkers();
+        renderStepDropdown();
+        renderSequencerRows();
+        loadPreset('basic');
+        setupVisualizer();
+        selectNote('C');
+        updateGuideVisibility();
+        renderStepInspector();
+    });
+
+    function initAudio() {
+        if (!audioCtx) {
+            const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioCtxClass();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 64;
+            masterGainNode = audioCtx.createGain();
+            masterGainNode.gain.setValueAtTime(0.8, audioCtx.currentTime);
+            masterGainNode.connect(analyser);
+            analyser.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function renderStepDropdown() {
+        const select = document.getElementById('active-step-select');
+        if (!select) return;
+        let html = '';
+        for (let i = 0; i < totalSteps; i++) {
+            html += `<option value="${i}" ${i === activeStepIdx ? 'selected' : ''}>칸 ${i + 1}</option>`;
+        }
+        select.innerHTML = html;
+    }
+
+    function changeActiveStep(val) {
+        activeStepIdx = parseInt(val);
+        renderStepInspector();
+    }
+
+    function changeStepCount(val) {
+        totalSteps = parseInt(val);
+        if (currentStep >= totalSteps) currentStep = 0;
+        if (activeStepIdx >= totalSteps) activeStepIdx = 0;
+        renderStepMarkers();
+        renderStepDropdown();
+        renderSequencerRows();
+        updateGridUI();
+        renderStepInspector();
+    }
+
+    function changeTargetTrack(val) {
+        selectedTrackIdx = parseInt(val);
+        renderStepInspector();
+    }
+
+    function renderStepInspector() {
+        const container = document.getElementById('step-notes-inspector');
+        if (!container) return;
+        container.style.gridTemplateColumns = `repeat(${totalSteps}, minmax(0, 1fr))`;
+        let html = '';
+
+        for (let s = 0; s < totalSteps; s++) {
+            const noteStr = stepPitchGrid[selectedTrackIdx][s] || (INSTRUMENTS[selectedTrackIdx].currentNote || 'C1');
+            const isActiveStep = s === activeStepIdx;
+            const isNoteActive = grid[selectedTrackIdx][s];
+
+            html += `
+                <button onclick="setActiveStepAndOpenModal(${s})" class="py-1 rounded text-center font-bold transition-all border ${
+                    isActiveStep 
+                        ? 'bg-pink-600 text-white border-pink-400 ring-1 ring-pink-400' 
+                        : (isNoteActive ? 'bg-indigo-900/60 text-indigo-200 border-indigo-500/50' : 'bg-slate-900 text-slate-500 border-slate-800 hover:border-slate-700')
+                }">
+                    ${noteStr}
+                </button>
+            `;
+        }
+        container.innerHTML = html;
+    }
+
+    function setActiveStepAndOpenModal(stepIdx) {
+        activeStepIdx = stepIdx;
+        const stepSelect = document.getElementById('active-step-select');
+        if (stepSelect) stepSelect.value = stepIdx;
+        openPitchModal(selectedTrackIdx, stepIdx);
+        renderStepInspector();
+    }
+
+    function toggleGuideMode() {
+        guideModeActive = !guideModeActive;
+        const textLabel = document.getElementById('guide-toggle-text');
+        const btn = document.getElementById('btn-guide-toggle');
+        if (guideModeActive) {
+            textLabel.textContent = '가이드 ON';
+            btn.className = 'px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all';
+        } else {
+            textLabel.textContent = '가이드 OFF';
+            btn.className = 'px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all';
+        }
+        updateGuideVisibility();
+    }
+
+    function updateGuideVisibility() {
+        document.querySelectorAll('.guide-tag').forEach(el => {
+            if (guideModeActive) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+    }
+
+    function renderStepMarkers() {
+        const container = document.getElementById('step-markers-container');
+        container.style.gridTemplateColumns = `repeat(${totalSteps}, minmax(0, 1fr))`;
+        let html = '';
+        for (let i = 1; i <= totalSteps; i++) {
+            html += `<div id="step-marker-${i-1}" class="py-0.5 rounded text-center font-bold font-mono text-[10px] ${i%4===1?'text-pink-400 font-extrabold':''}">${i}</div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    function renderSequencerRows() {
+        const container = document.getElementById('sequencer-rows');
+        container.innerHTML = '';
+
+        INSTRUMENTS.forEach((inst, instIdx) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center space-x-1 flex-1';
+
+            const labelCol = document.createElement('div');
+            labelCol.className = 'w-48 flex items-center justify-between pr-1 shrink-0';
+            labelCol.innerHTML = `
+                <div class="flex flex-col truncate">
+                    <div class="flex items-center space-x-1 truncate">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${inst.color}"></span>
+                        <span class="truncate text-xs text-slate-200 font-mono font-bold">${inst.name}</span>
+                        ${inst.pitchable ? `<span id="track-note-label-${instIdx}" class="text-[9px] bg-indigo-500/20 text-indigo-300 px-1 rounded font-mono font-bold">${inst.currentNote}</span>` : ''}
+                    </div>
+                    <span class="guide-tag text-[9px] text-slate-400 font-sans truncate">${inst.desc}</span>
+                </div>
+                <div class="flex items-center space-x-0.5 shrink-0">
+                    <button id="btn-mute-${instIdx}" onclick="toggleMute(${instIdx})" class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-white" title="이 악기 소리 끄기">M</button>
+                    <button id="btn-solo-${instIdx}" onclick="toggleSolo(${instIdx})" class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400" title="이 악기 소리만 듣기">S</button>
+                </div>
+            `;
+            row.appendChild(labelCol);
+
+            const stepsGrid = document.createElement('div');
+            stepsGrid.className = 'flex-1 grid gap-1 h-full items-center';
+            stepsGrid.style.gridTemplateColumns = `repeat(${totalSteps}, minmax(0, 1fr))`;
+
+            for (let stepIdx = 0; stepIdx < totalSteps; stepIdx++) {
+                const btn = document.createElement('button');
+                btn.id = `cell-${instIdx}-${stepIdx}`;
+                btn.className = `h-full min-h-[28px] max-h-[44px] rounded-lg border border-slate-800 bg-slate-950 hover:border-indigo-400 transition-all cursor-pointer relative font-mono text-xs flex items-center justify-center font-bold text-white shadow-inner`;
+                
+                btn.onclick = () => {
+                    initAudio();
+                    toggleCell(instIdx, stepIdx);
+                };
+
+                btn.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    initAudio();
+                    if (inst.pitchable) {
+                        openPitchModal(instIdx, stepIdx);
+                    } else {
+                        toggleCell(instIdx, stepIdx);
+                    }
+                };
+
+                stepsGrid.appendChild(btn);
+            }
+            row.appendChild(stepsGrid);
+            container.appendChild(row);
+        });
+        updateGuideVisibility();
+    }
+
+    function toggleMute(idx) {
+        INSTRUMENTS[idx].muted = !INSTRUMENTS[idx].muted;
+        const btn = document.getElementById(`btn-mute-${idx}`);
+        if (INSTRUMENTS[idx].muted) {
+            btn.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono bg-red-600 text-white font-bold';
+        } else {
+            btn.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-white';
+        }
+    }
+
+    function toggleSolo(idx) {
+        INSTRUMENTS[idx].solo = !INSTRUMENTS[idx].solo;
+        const btn = document.getElementById(`btn-solo-${idx}`);
+        if (INSTRUMENTS[idx].solo) {
+            btn.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500 text-black font-bold';
+        } else {
+            btn.className = 'px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-900 border border-slate-800 text-slate-400 hover:text-amber-400';
+        }
+    }
+
+    function toggleCell(instIdx, stepIdx) {
+        grid[instIdx][stepIdx] = !grid[instIdx][stepIdx];
+        if (grid[instIdx][stepIdx] && !stepPitchGrid[instIdx][stepIdx]) {
+            stepPitchGrid[instIdx][stepIdx] = INSTRUMENTS[instIdx].currentNote || `${selectedNote}${currentOctave}`;
+        }
+        activeStepIdx = stepIdx;
+        const stepSelect = document.getElementById('active-step-select');
+        if (stepSelect) stepSelect.value = stepIdx;
+
+        updateGridUI();
+        renderStepInspector();
+    }
+
+    function updateGridUI() {
+        INSTRUMENTS.forEach((inst, instIdx) => {
+            for (let stepIdx = 0; stepIdx < totalSteps; stepIdx++) {
+                const btn = document.getElementById(`cell-${instIdx}-${stepIdx}`);
+                if (!btn) continue;
+
+                const active = grid[instIdx][stepIdx];
+                const customNote = stepPitchGrid[instIdx][stepIdx];
+                
+                if (active) {
+                    btn.style.backgroundColor = inst.color;
+                    btn.style.borderColor = inst.color;
+                    btn.style.boxShadow = `0 0 10px ${inst.color}a0`;
+
+                    if (inst.pitchable && customNote) {
+                        btn.textContent = customNote;
+                    } else {
+                        btn.textContent = '✓';
+                    }
+                } else {
+                    btn.style.backgroundColor = '';
+                    btn.style.borderColor = '';
+                    btn.style.boxShadow = '';
+                    btn.textContent = '';
+                }
+            }
+        });
+    }
+
+    function setOctave(oct) {
+        currentOctave = oct;
+        [1, 2, 3].forEach(o => {
+            const btn = document.getElementById(`oct-${o}`);
+            if (o === oct) {
+                btn.className = 'px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono font-bold';
+            } else {
+                btn.className = 'px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono';
+            }
+        });
+        selectNote(selectedNote);
+    }
+
+    function selectNote(noteKey) {
+        selectedNote = noteKey;
+        const noteStr = `${noteKey}${currentOctave}`;
+
+        // Assign note directly to the active step cell for the targeted melody track
+        const targetInst = INSTRUMENTS[selectedTrackIdx];
+        if (targetInst && targetInst.pitchable) {
+            stepPitchGrid[selectedTrackIdx][activeStepIdx] = noteStr;
+            grid[selectedTrackIdx][activeStepIdx] = true;
+            targetInst.currentNote = noteStr;
+            const label = document.getElementById(`track-note-label-${selectedTrackIdx}`);
+            if (label) label.textContent = noteStr;
+        }
+
+        document.querySelectorAll('.note-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-400');
+            btn.classList.add('bg-slate-950', 'text-slate-300');
+        });
+        const activeBtn = document.getElementById(`note-${noteKey}`);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-400');
+            activeBtn.classList.remove('bg-slate-950', 'text-slate-300');
+        }
+
+        updateGridUI();
+        renderStepInspector();
+
+        initAudio();
+        playPitchSound(selectedTrackIdx, noteKey, currentOctave);
+    }
+
+    // Modal logic for step note customization
+    function openPitchModal(instIdx, stepIdx) {
+        targetInstIdx = instIdx;
+        targetStepIdx = stepIdx;
+        modalOctave = 1;
+        setModalOctave(1);
+        const modal = document.getElementById('pitch-modal');
+        document.getElementById('pitch-modal-title').textContent = `${INSTRUMENTS[instIdx].name} - ${stepIdx + 1}번 스텝 음계 선택`;
+        modal.classList.remove('hidden');
+    }
+
+    function closePitchModal(e) {
+        if (e && e.target.id !== 'pitch-modal') return;
+        document.getElementById('pitch-modal').classList.add('hidden');
+    }
+
+    function setModalOctave(oct) {
+        modalOctave = oct;
+        [1, 2, 3].forEach(o => {
+            const btn = document.getElementById(`m-oct-${o}`);
+            if (o === oct) {
+                btn.className = 'px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-mono';
+            } else {
+                btn.className = 'px-2 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono';
+            }
+        });
+    }
+
+    function assignNoteToStep(note) {
+        if (targetInstIdx !== null && targetStepIdx !== null) {
+            const noteStr = `${note}${modalOctave}`;
+            stepPitchGrid[targetInstIdx][targetStepIdx] = noteStr;
+            grid[targetInstIdx][targetStepIdx] = true;
+            activeStepIdx = targetStepIdx;
+            const stepSelect = document.getElementById('active-step-select');
+            if (stepSelect) stepSelect.value = activeStepIdx;
+
+            updateGridUI();
+            renderStepInspector();
+            playPitchSound(targetInstIdx, note, modalOctave);
+        }
+        document.getElementById('pitch-modal').classList.add('hidden');
+    }
+
+    // Synthesizer Audio Sound Generators
+    function playPitchSound(instIdx, note, oct) {
+        initAudio();
+        if (!audioCtx) return;
+
+        const baseFreq = NOTE_FREQS[note] || 130.81;
+        const freq = baseFreq * Math.pow(2, oct - 1);
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = (instIdx === 5) ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+        osc.connect(gain);
+        gain.connect(masterGainNode);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    function getPitchFromNoteStr(noteStr) {
+        if (!noteStr) return 130.81;
+        const noteKey = noteStr.replace(/[0-9]/g, '');
+        const oct = parseInt(noteStr.replace(/[^0-9]/g, '')) || 1;
+        const base = NOTE_FREQS[noteKey] || 130.81;
+        return base * Math.pow(2, oct - 1);
+    }
+
+    function playSound(instIdx, stepIdx) {
+        initAudio();
+        if (!audioCtx) return;
+
+        // Mute / Solo Checks
+        const anySolo = INSTRUMENTS.some(i => i.solo);
+        const inst = INSTRUMENTS[instIdx];
+
+        if (inst.muted) return;
+        if (anySolo && !inst.solo) return;
+
+        const t = audioCtx.currentTime;
+        const customNoteStr = stepPitchGrid[instIdx][stepIdx];
+
+        switch (inst.id) {
+            case 'kick': {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.15);
+                gain.gain.setValueAtTime(1.0, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                osc.connect(gain);
+                gain.connect(masterGainNode);
+                osc.start(t);
+                osc.stop(t + 0.15);
+                break;
+            }
+            case 'snare': {
+                const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < noiseBuffer.length; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                const whiteNoise = audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(1000, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.7, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                whiteNoise.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGainNode);
+                whiteNoise.start(t);
+                whiteNoise.stop(t + 0.1);
+                break;
+            }
+            case 'hihat': {
+                const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < noiseBuffer.length; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                const whiteNoise = audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(7000, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.5, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                whiteNoise.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGainNode);
+                whiteNoise.start(t);
+                whiteNoise.stop(t + 0.05);
+                break;
+            }
+            case 'clap': {
+                const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.12, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < noiseBuffer.length; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                const whiteNoise = audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1200, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.6, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+                whiteNoise.connect(filter);
+                filter.connect(gain);
+                gain.connect(masterGainNode);
+                whiteNoise.start(t);
+                whiteNoise.stop(t + 0.12);
+                break;
+            }
+            case 'tom': {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(120, t);
+                osc.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+                gain.gain.setValueAtTime(0.8, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                osc.connect(gain);
+                gain.connect(masterGainNode);
+                osc.start(t);
+                osc.stop(t + 0.2);
+                break;
+            }
+            case 'synth':
+            case 'lead': {
+                const freq = customNoteStr ? getPitchFromNoteStr(customNoteStr) : inst.pitch;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = (inst.id === 'synth') ? 'sawtooth' : 'square';
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0.4, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+                osc.connect(gain);
+                gain.connect(masterGainNode);
+                osc.start(t);
+                osc.stop(t + 0.25);
+                break;
+            }
+        }
+    }
+
+    function togglePlay() {
+        initAudio();
+        isPlaying = !isPlaying;
+        const btn = document.getElementById('btn-play');
+        const text = document.getElementById('play-btn-text');
+        const stateText = document.getElementById('playing-state-text');
+        const audioStatus = document.getElementById('audio-status');
+
+        if (isPlaying) {
+            btn.className = 'px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all';
+            text.textContent = '일시정지';
+            stateText.textContent = 'Playing...';
+            stateText.className = 'text-emerald-400 font-mono font-bold animate-pulse';
+            audioStatus.textContent = '재생 중';
+            audioStatus.className = 'text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded-full font-mono';
+            
+            startSequencer();
+        } else {
+            btn.className = 'px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-pink-600/30 transition-all';
+            text.textContent = '재생';
+            stateText.textContent = 'Stopped';
+            stateText.className = 'text-slate-200 font-mono font-medium';
+            audioStatus.textContent = '대기중';
+            audioStatus.className = 'text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded-full font-mono';
+            
+            stopSequencer();
+        }
+    }
+
+    function startSequencer() {
+        stopSequencer();
+        const intervalMs = (60 / bpm / 4) * 1000;
+        stepTick();
+        timerId = setInterval(stepTick, intervalMs);
+    }
+
+    function stopSequencer() {
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+    }
+
+    function stepTick() {
+        for (let i = 0; i < totalSteps; i++) {
+            const m = document.getElementById(`step-marker-${i}`);
+            if (m) m.classList.remove('bg-pink-500/30', 'text-pink-300', 'font-extrabold');
+        }
+
+        const currentMarker = document.getElementById(`step-marker-${currentStep}`);
+        if (currentMarker) currentMarker.classList.add('bg-pink-500/30', 'text-pink-300', 'font-extrabold');
+
+        INSTRUMENTS.forEach((inst, instIdx) => {
+            if (grid[instIdx][currentStep]) {
+                playSound(instIdx, currentStep);
+            }
+        });
+
+        document.getElementById('current-step-text').textContent = `Step ${currentStep + 1} / ${totalSteps}`;
+        currentStep = (currentStep + 1) % totalSteps;
+    }
+
+    function updateBPM(val) {
+        bpm = parseInt(val);
+        document.getElementById('bpm-val').textContent = bpm;
+        if (isPlaying) {
+            startSequencer();
+        }
+    }
+
+    function handleTapTempo() {
+        const now = Date.now();
+        if (lastTapTime > 0) {
+            const diff = now - lastTapTime;
+            if (diff > 300 && diff < 2000) {
+                const calculatedBpm = Math.round(60000 / diff);
+                const clamped = Math.min(190, Math.max(60, calculatedBpm));
+                document.getElementById('bpm-slider').value = clamped;
+                updateBPM(clamped);
+            }
+        }
+        lastTapTime = now;
+    }
+
+    function updateMasterVol(val) {
+        initAudio();
+        const v = parseFloat(val);
+        if (masterGainNode) {
+            masterGainNode.gain.setValueAtTime(v, audioCtx.currentTime);
+        }
+        document.getElementById('vol-val').textContent = `${Math.round(v * 100)}%`;
+    }
+
+    function clearGrid() {
+        grid = Array(INSTRUMENTS.length).fill(null).map(() => Array(16).fill(false));
+        stepPitchGrid = Array(INSTRUMENTS.length).fill(null).map(() => Array(16).fill(null));
+        updateGridUI();
+        renderStepInspector();
+    }
+
+    function loadPreset(name) {
+        clearGrid();
+        if (name === 'basic') {
+            [0, 4, 8, 12].forEach(s => grid[0][s] = true); // Kick
+            [4, 12].forEach(s => grid[1][s] = true);       // Snare
+            [2, 6, 10, 14].forEach(s => grid[2][s] = true); // Hihat
+            grid[5][0] = true; stepPitchGrid[5][0] = 'C1';
+            grid[5][4] = true; stepPitchGrid[5][4] = 'E1';
+            grid[5][8] = true; stepPitchGrid[5][8] = 'G1';
+            grid[5][12] = true; stepPitchGrid[5][12] = 'B1';
+        } else if (name === 'hiphop') {
+            [0, 7, 10].forEach(s => grid[0][s] = true);
+            [4, 12].forEach(s => grid[1][s] = true);
+            for (let s = 0; s < 16; s += 2) grid[2][s] = true;
+            grid[3][14] = true;
+            grid[5][0] = true; stepPitchGrid[5][0] = 'G1';
+            grid[5][6] = true; stepPitchGrid[5][6] = 'A#1';
+            grid[5][12] = true; stepPitchGrid[5][12] = 'D2';
+        } else if (name === 'house') {
+            [0, 4, 8, 12].forEach(s => grid[0][s] = true);
+            [4, 12].forEach(s => grid[1][s] = true);
+            [2, 6, 10, 14].forEach(s => grid[2][s] = true);
+            grid[6][0] = true; stepPitchGrid[6][0] = 'C2';
+            grid[6][2] = true; stepPitchGrid[6][2] = 'E2';
+            grid[6][8] = true; stepPitchGrid[6][8] = 'G2';
+            grid[6][10] = true; stepPitchGrid[6][10] = 'C3';
+        } else if (name === 'synthwave') {
+            [0, 6, 8, 14].forEach(s => grid[0][s] = true);
+            [4, 12].forEach(s => grid[1][s] = true);
+            for (let s = 0; s < 16; s += 2) grid[2][s] = true;
+            [0, 2, 4, 6, 8, 10, 12, 14].forEach((s, idx) => {
+                const notes = ['A1', 'C2', 'E2', 'G2', 'A1', 'C2', 'D2', 'E2'];
+                grid[5][s] = true;
+                stepPitchGrid[5][s] = notes[idx];
+            });
+        }
+        updateGridUI();
+        renderStepInspector();
+    }
+
+    function exportPattern() {
+        const data = {
+            totalSteps,
+            bpm,
+            grid,
+            stepPitchGrid
+        };
+        const str = JSON.stringify(data);
+        const el = document.createElement('textarea');
+        el.value = str;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        showModal("패턴 내보내기 완료", "비트 패턴 클립보드 복사 완료! JSON 코드 형식으로 저장되었습니다.");
+    }
+
+    function importPattern() {
+        const input = prompt("저장된 패턴 JSON 코드를 붙여넣으세요:");
+        if (!input) return;
+        try {
+            const data = JSON.parse(input);
+            if (data.grid && Array.isArray(data.grid)) {
+                grid = data.grid;
+                if (data.stepPitchGrid) stepPitchGrid = data.stepPitchGrid;
+                if (data.totalSteps) {
+                    document.getElementById('step-count-select').value = data.totalSteps;
+                    changeStepCount(data.totalSteps);
+                }
+                if (data.bpm) {
+                    document.getElementById('bpm-slider').value = data.bpm;
+                    updateBPM(data.bpm);
+                }
+                updateGridUI();
+                renderStepInspector();
+                showModal("불러오기 성공", "비트 패턴을 정상적으로 불러왔습니다.");
+            }
+        } catch (e) {
+            showModal("오류 발생", "유효하지 않은 패턴 데이터입니다.");
+        }
+    }
+
+    function showModal(title, msg) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-msg').textContent = msg;
+        document.getElementById('custom-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('custom-modal').classList.add('hidden');
+    }
+
+    // Canvas Equalizer Visualizer Setup
+    function setupVisualizer() {
+        const canvas = document.getElementById('visualizer-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (!analyser) {
+                ctx.fillStyle = '#1e293b';
+                ctx.font = '10px monospace';
+                ctx.fillText('오디오 엔진 대기 중...', 10, canvas.height / 2);
+                return;
+            }
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            const barWidth = (canvas.width / bufferLength) * 2;
+            let barHeight;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = (dataArray[i] / 255) * canvas.height;
+
+                const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                gradient.addColorStop(0, '#ec4899');
+                gradient.addColorStop(0.5, '#a855f7');
+                gradient.addColorStop(1, '#06b6d4');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+        drawVisualizer();
+    }
+</script>
+</body>
+</html>

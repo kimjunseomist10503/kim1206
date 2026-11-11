@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>치이카와와 함께하는 에코 스쿨 6모둠 | SDGs 12 실천 플랫폼</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .sdg12-bg { background-color: #BF8B2E; }
+        .sdg12-text { color: #BF8B2E; }
+        .sdg12-border { border-color: #BF8B2E; }
+        
+        .fade-in {
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chiikawa-bounce {
+            animation: chiikawaBounce 2s infinite ease-in-out;
+        }
+        @keyframes chiikawaBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between pb-28 md:pb-12 relative overflow-x-hidden bg-[#f8fafc]">
+
+    <!-- 배경 대형 워터마크 -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none">
+        <svg viewBox="0 0 120 120" class="absolute -top-6 -left-6 w-48 h-48 opacity-[0.08] -rotate-12">
+            <circle cx="28" cy="34" r="12" fill="#ffffff" stroke="#1e293b" stroke-width="5"/>
+            <circle cx="92" cy="34" r="12" fill="#ffffff" stroke="#1e293b" stroke-width="5"/>
+            <ellipse cx="60" cy="68" rx="44" ry="38" fill="#ffffff" stroke="#1e293b" stroke-width="5"/>
+        </svg>
+        <svg viewBox="0 0 120 120" class="absolute top-1/3 -right-8 w-56 h-56 opacity-[0.08] rotate-12">
+            <path d="M24 42 L34 12 L56 32 Z" fill="#60a5fa" stroke="#1e293b" stroke-width="5" stroke-linejoin="round"/>
+            <ellipse cx="60" cy="68" rx="44" ry="38" fill="#ffffff" stroke="#1e293b" stroke-width="5"/>
+        </svg>
+    </div>
+
+    <!-- 상단 헤더: 휴대폰 상단 고정, 여백 및 터치 영역 확대 -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-xl shrink-0 border border-amber-300">
+                    🐻
+                </div>
+                <div>
+                    <h1 class="font-black text-slate-900 text-sm leading-tight">에코 스쿨 6모둠</h1>
+                    <p class="text-[11px] text-amber-700 font-bold">치이카와 & SDGs 12</p>
+                </div>
+            </div>
+            
+            <!-- 내 포인트 및 등급 뱃지 -->
+            <div class="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-2xl shadow-2xs">
+                <span class="text-xs">🪙</span>
+                <div>
+                    <span id="header-points" class="font-black text-amber-700 text-xs block leading-none">350 P</span>
+                    <span id="header-tier" class="text-[9px] text-slate-500 font-bold block mt-0.5">🎀 치이카와 프렌즈</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 (모바일 최적화 max-w-md 중앙 정렬) -->
+    <main class="max-w-md mx-auto w-full px-4 pt-4 space-y-4 z-10 relative">
+
+        <!-- 토스트 알림 박스 -->
+        <div id="toast-box" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 hidden bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs font-bold border border-slate-700 max-w-xs w-full text-center justify-center">
+            <span id="toast-icon" class="text-lg">🐻</span>
+            <span id="toast-message">알림 메시지입니다.</span>
+        </div>
+
+        <!-- 우측 하단 플로팅 치이카와 3총사 응원 말풍선 위젯 -->
+        <div onclick="cheerRandomCharacter()" class="fixed bottom-20 right-4 z-40 cursor-pointer group select-none">
+            <div class="bg-white border-2 border-amber-400 rounded-2xl px-3 py-1.5 shadow-lg mb-1.5 text-[11px] font-bold text-slate-800 max-w-[180px] text-center relative group-hover:scale-105 transition">
+                <span id="floating-cheer-msg">"야하~! 오늘도 잔반 제로!"</span>
+                <div class="w-2.5 h-2.5 bg-white border-r-2 border-b-2 border-amber-400 transform rotate-45 absolute -bottom-1.5 right-6"></div>
+            </div>
+            <div class="flex justify-end items-end -space-x-2 chiikawa-bounce">
+                <div class="w-10 h-10 rounded-full bg-sky-50 border-2 border-sky-400 flex items-center justify-center shadow-md">🐱</div>
+                <div class="w-12 h-12 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center shadow-md z-10">🐻</div>
+                <div class="w-10 h-10 rounded-full bg-yellow-50 border-2 border-yellow-400 flex items-center justify-center shadow-md">🐰</div>
+            </div>
+        </div>
+
+        <!-- 사진 인증 모달 -->
+        <div id="photo-modal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl fade-in relative overflow-hidden border-2 border-amber-300">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 id="modal-title" class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                        <span id="modal-char-emoji">🐻</span>
+                        <span id="modal-title-text">📸 빈 그릇 인증하기</span>
+                    </h3>
+                    <button onclick="closePhotoModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+                </div>
+                <div class="bg-amber-50 rounded-2xl p-2.5 mb-3 flex items-center gap-2 border border-amber-200">
+                    <span class="text-xl" id="modal-helper-icon">🐱</span>
+                    <p id="modal-desc" class="text-[11px] text-amber-900 font-medium">깨끗해진 식판 사진을 업로드해 주세요!</p>
+                </div>
+                
+                <label class="block w-full h-40 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/40 hover:bg-amber-50 transition cursor-pointer flex flex-col items-center justify-center overflow-hidden relative mb-4">
+                    <img id="photo-preview" class="hidden w-full h-full object-cover" alt="미리보기">
+                    <div id="photo-placeholder" class="text-center p-4">
+                        <span class="text-3xl block mb-1">📸</span>
+                        <span class="text-xs font-bold text-amber-800 block">터치하여 사진 촬영 / 앨범 선택</span>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="previewPhoto(event)">
+                </label>
+
+                <button onclick="submitPhotoMission()" class="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs transition shadow-sm">
+                    🐾 인증 완료하고 포인트 받기
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: 오늘의 실천 -->
+        <section id="tab-home" class="space-y-4 fade-in">
+            <!-- 메인 환영 배너 -->
+            <div class="bg-gradient-to-br from-amber-500 via-yellow-500 to-sky-500 rounded-3xl p-5 text-white shadow-sm relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="bg-white/25 backdrop-blur-sm text-[10px] font-bold px-2.5 py-1 rounded-full">SDGs 12 책임감 있는 소비</span>
+                        <span class="text-xs font-bold text-yellow-100">6모둠</span>
+                    </div>
+                    <h2 class="text-base font-black mb-1">치이카와 친구들과 함께 완식! 야하~</h2>
+                    <p class="text-xs text-yellow-100 mb-3" id="partner-cheer-text">"먹을 수 있는 만큼만 받아야 해!"</p>
+
+                    <!-- 파트너 캐릭터 선택 가로 스크롤 -->
+                    <div class="bg-black/20 rounded-2xl p-2.5">
+                        <p class="text-[11px] font-bold mb-2 text-amber-100 flex justify-between">
+                            <span>내 응원 파트너:</span>
+                            <span id="selected-char-name" class="text-yellow-300 font-extrabold">치이카와</span>
+                        </p>
+                        <div class="grid grid-cols-7 gap-1">
+                            <button onclick="selectPartner('chiikawa')" id="partner-chiikawa" class="bg-white text-slate-900 py-1.5 rounded-xl text-[10px] font-bold flex flex-col items-center shadow-xs border-2 border-yellow-300">
+                                <span class="text-base">🐻</span>
+                                <span>치이카와</span>
+                            </button>
+                            <button onclick="selectPartner('hachiware')" id="partner-hachiware" class="bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center">
+                                <span class="text-base">🐱</span>
+                                <span>하치와레</span>
+                            </button>
+                            <button onclick="selectPartner('usagi')" id="partner-usagi" class="bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center">
+                                <span class="text-base">🐰</span>
+                                <span>우사기</span>
+                            </button>
+                            <button onclick="selectPartner('momonga')" id="partner-momonga" class="bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center">
+                                <span class="text-base">🐿️</span>
+                                <span>모몽가</span>
+                            </button>
+                            <button onclick="selectPartner('kurimanju')" id="partner-kurimanju" class="bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center">
+                                <span class="text-base">🌰</span>
+                                <span>쿠리만주</span>
+                            </button>
+                            <button onclick="selectPartner('rakko')" id="partner-rakko" class="bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center">
+                                <span class="text-base">🦦</span>
+                                <span>랏코</span>
+                            </button>
+                            <button onclick="selectPartner('shisa')" id="partner-shisa" class="bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center">
+                                <span class="text-base">🦁</span>
+                                <span>시사</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 연속 실천 스트릭 -->
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">🔥</span>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-xs">연속 <span id="streak-count" class="text-amber-600 font-black">4</span>일째 스탬프 랠리!</h3>
+                            <p class="text-[10px] text-slate-400">매일 도장 모으고 보너스 +50P</p>
+                        </div>
+                    </div>
+                    <span id="tier-badge-mobile" class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">프렌즈</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1.5 text-center">
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl py-1.5"><span class="text-[9px] font-bold text-slate-500 block">월</span><span class="text-sm">🐻</span></div>
+                    <div class="bg-sky-50 border border-sky-200 rounded-xl py-1.5"><span class="text-[9px] font-bold text-slate-500 block">화</span><span class="text-sm">🐱</span></div>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl py-1.5"><span class="text-[9px] font-bold text-slate-500 block">수</span><span class="text-sm">🐰</span></div>
+                    <div class="bg-purple-50 border border-purple-200 rounded-xl py-1.5"><span class="text-[9px] font-bold text-slate-500 block">목</span><span class="text-sm">🐿️</span></div>
+                    <div id="friday-stamp" class="bg-slate-50 border border-dashed border-slate-300 rounded-xl py-1.5"><span class="text-[9px] font-bold text-slate-400 block">금</span><span id="friday-stamp-icon" class="text-sm">🔒</span></div>
+                </div>
+            </div>
+
+            <!-- 미션 카드 2개 -->
+            <div class="space-y-3">
+                <!-- 미션 1 -->
+                <div class="bg-white rounded-3xl p-4 border-2 border-emerald-200 shadow-2xs flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-xl shrink-0">🐻</div>
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">완식 미션</span>
+                                <span class="text-xs font-black text-emerald-600">+50 P</span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-xs">치이카와 잔반 제로 인증</h4>
+                        </div>
+                    </div>
+                    <button id="btn-mission-food" onclick="openPhotoModal('food', 50)" class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs transition shrink-0 shadow-xs">
+                        📸 인증하기
+                    </button>
+                </div>
+
+                <!-- 미션 2 -->
+                <div class="bg-white rounded-3xl p-4 border-2 border-sky-200 shadow-2xs flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-sky-50 flex items-center justify-center text-xl shrink-0">🐱</div>
+                        <div>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="text-[10px] font-extrabold text-sky-800 bg-sky-50 px-2 py-0.5 rounded-md">텀블러 미션</span>
+                                <span class="text-xs font-black text-sky-600">+40 P</span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-xs">하치와레 텀블러 사용</h4>
+                        </div>
+                    </div>
+                    <button id="btn-mission-cup" onclick="openPhotoModal('cup', 40)" class="px-4 py-2.5 rounded-2xl bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs transition shrink-0 shadow-xs">
+                        📸 인증하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- 실시간 피드 -->
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
+                <h3 class="font-bold text-slate-800 text-xs mb-2.5 flex items-center gap-1.5">
+                    <span>📢</span> 실시간 실천 피드
+                </h3>
+                <ul id="activity-feed" class="space-y-2 text-[11px]">
+                    <li class="flex items-center justify-between py-1.5 border-b border-slate-100">
+                        <span class="text-slate-700">🐱 <strong class="text-slate-900">2학년 3반 김민수</strong>님이 잔반 제로 완료!</span>
+                        <span class="text-slate-400 shrink-0 ml-2">방금 전</span>
+                    </li>
+                    <li class="flex items-center justify-between py-1.5">
+                        <span class="text-slate-700">🐰 <strong class="text-slate-900">2학년 1반 박지훈</strong>님이 텀블러 인증 완료!</span>
+                        <span class="text-slate-400 shrink-0 ml-2">11분 전</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- TAB 2: 학교 변화 -->
+        <section id="tab-stats" class="hidden space-y-4 fade-in">
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
+                <h2 class="text-sm font-extrabold text-slate-900 mb-1">🦦 랏코 사부의 학교 변화 리포트</h2>
+                <p class="text-[11px] text-slate-400 mb-4">학생들이 함께 줄인 누적 데이터입니다.</p>
+
+                <div class="grid grid-cols-2 gap-2.5 mb-4">
+                    <div class="bg-amber-50 rounded-2xl p-3 text-center border border-amber-100">
+                        <span class="text-lg block mb-0.5">🐻</span>
+                        <p class="text-[11px] text-amber-800 font-medium">감소된 잔반량</p>
+                        <p class="text-xl font-black text-amber-600" id="stat-food-kg">142.5 kg</p>
+                    </div>
+                    <div class="bg-sky-50 rounded-2xl p-3 text-center border border-sky-100">
+                        <span class="text-lg block mb-0.5">🐱</span>
+                        <p class="text-[11px] text-sky-800 font-medium">절약한 일회용컵</p>
+                        <p class="text-xl font-black text-sky-600" id="stat-cup-count">618 개</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 반별 랭킹 -->
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
+                <h3 class="font-bold text-slate-900 text-xs mb-3">🏆 이번 달 에코 학급 랭킹</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between bg-amber-50 border border-amber-300 p-2.5 rounded-2xl">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-lg">👑</span>
+                            <div>
+                                <p class="font-bold text-slate-900 text-xs">2학년 3반 (6모둠)</p>
+                                <p class="text-[10px] text-slate-500">잔반 제로 92%</p>
+                            </div>
+                        </div>
+                        <span class="font-black text-amber-700 text-xs" id="rank-our-class-score">2,450 P</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 응원 메시지 -->
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
+                <h3 class="font-bold text-slate-900 text-xs mb-2">💌 응원 한마디 남기기</h3>
+                <form onsubmit="addCheerMessage(event)" class="flex gap-2 mb-3">
+                    <input type="text" id="cheer-input" placeholder="메시지를 입력하세요" required
+                        class="flex-grow px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-amber-500">
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs shrink-0">등록</button>
+                </form>
+                <div id="cheer-list" class="space-y-2 text-xs">
+                    <div class="bg-amber-50/70 rounded-2xl p-3 border border-amber-100">
+                        <p class="font-bold text-amber-900 text-[11px] mb-0.5">🐻 치이카와 팬 학생</p>
+                        <p class="text-slate-700">"야하~! 하고 다 먹었어요. 음식물 쓰레기 냄새가 없어서 너무 좋아요!"</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: 상점·퀴즈 -->
+        <section id="tab-shop" class="hidden space-y-4 fade-in">
+            <!-- 퀴즈 -->
+            <div class="bg-white rounded-3xl p-4 border-2 border-yellow-200 shadow-2xs">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="bg-yellow-100 text-yellow-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full">🐰 우사기 퀴즈 (+30P)</span>
+                    <span class="text-[10px] text-slate-400">야하~!</span>
+                </div>
+                <h3 class="font-extrabold text-slate-900 text-xs mb-3">Q. 연간 음식물 쓰레기 처리 비용은?</h3>
+                <div id="quiz-options" class="space-y-2">
+                    <button onclick="checkQuiz(false, this)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700">① 약 800억 원</button>
+                    <button onclick="checkQuiz(true, this)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700">② 약 8,000억 원 이상</button>
+                </div>
+                <p id="quiz-feedback" class="hidden mt-2 text-[11px] font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-xl">정답입니다! +30P 적립!</p>
+            </div>
+
+            <!-- NEW FEATURE 1: 에코 탭탭 미니게임 (잔반 잡기 게임) -->
+            <div class="bg-gradient-to-br from-sky-500 to-indigo-600 rounded-3xl p-4 text-white shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="bg-white/25 text-[10px] font-bold px-2 py-0.5 rounded-full">🎮 미니 게임</span>
+                    <span class="text-xs font-bold text-sky-100">+50P 획득 기회</span>
+                </div>
+                <h3 class="font-extrabold text-sm mb-1">잔반 몬스터 잡기 대작전!</h3>
+                <p class="text-[11px] text-sky-100 mb-3">화면에 나타나는 잔반 몬스터를 터치해서 퇴치하세요!</p>
+                <div id="game-container" class="bg-slate-900/40 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/25 relative h-36 flex flex-col items-center justify-center">
+                    <div id="game-start-screen">
+                        <button onclick="startEcoGame()" class="px-5 py-2.5 rounded-xl bg-white text-indigo-700 font-black text-xs shadow-md hover:bg-sky-50 transition">
+                            🚀 게임 시작하기
+                        </button>
+                    </div>
+                    <div id="game-play-screen" class="hidden w-full h-full flex flex-col justify-between">
+                        <div class="flex justify-between text-xs font-bold px-2">
+                            <span>점수: <strong id="game-score">0</strong></span>
+                            <span>남은 시간: <strong id="game-time">10</strong>초</span>
+                        </div>
+                        <div id="game-target-area" class="relative flex-grow cursor-pointer flex items-center justify-center">
+                            <span id="game-monster" onclick="hitMonster()" class="text-3xl absolute transition transform hover:scale-125 select-none animate-bounce">🥦</span>
+                        </div>
+                    </div>
+                    <div id="game-end-screen" class="hidden">
+                        <p class="text-xs font-bold mb-2" id="game-result-msg">게임 종료! 300P 획득!</p>
+                        <button onclick="startEcoGame()" class="px-4 py-2 rounded-xl bg-white text-indigo-700 font-bold text-xs">다시 하기</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW FEATURE 2: 나만의 아바타 & 칭호 커스텀 샵 -->
+            <div class="bg-white rounded-3xl p-4 border border-amber-200 shadow-2xs">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                        <span>🧢</span> 아바타 & 칭호 커스텀
+                    </h3>
+                    <span class="text-[10px] text-amber-700 font-bold">내 프로필 꾸미기</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button onclick="equipAvatar('👑')" class="p-3 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-left transition flex items-center gap-2">
+                        <span class="text-xl">👑</span>
+                        <div>
+                            <p class="font-bold text-slate-900">지구 왕관</p>
+                            <p class="text-[10px] text-amber-800">장착하기</p>
+                        </div>
+                    </button>
+                    <button onclick="equipAvatar('🌱')" class="p-3 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-left transition flex items-center gap-2">
+                        <span class="text-xl">🌱</span>
+                        <div>
+                            <p class="font-bold text-slate-900">새싹 모자</p>
+                            <p class="text-[10px] text-emerald-800">장착하기</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 신규 기능 1: AI 치이카와 에코 챗봇 -->
+            <div class="bg-white rounded-3xl p-4 border border-amber-200 shadow-2xs">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                        <span>🤖</span> 치이카와 에코 AI 챗봇
+                    </h3>
+                    <span class="text-[10px] text-amber-700 font-bold">무엇이든 물어보세요!</span>
+                </div>
+                <div id="chat-messages" class="bg-amber-50/50 rounded-2xl p-3 h-28 overflow-y-auto space-y-2 mb-2 text-[11px] border border-amber-100">
+                    <div class="bg-white p-2 rounded-xl border border-amber-200 shadow-2xs">
+                        <p class="font-bold text-amber-800">🐻 치이카와 봇</p>
+                        <p class="text-slate-700">"야하~! 분리수거 방법이나 잔반 줄이기 팁이 궁금하면 버튼을 눌러줘!"</p>
+                    </div>
+                </div>
+                <div class="flex gap-1.5">
+                    <button onclick="askChatbot('잔반')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition">잔반 줄이기 팁</button>
+                    <button onclick="askChatbot('플라스틱')" class="bg-sky-100 hover:bg-sky-200 text-sky-900 text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition">플라스틱 분리수거</button>
+                    <button onclick="askChatbot('텀블러')" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition">텀블러 세척법</button>
+                </div>
+            </div>
+
+            <!-- NEW FEATURE 3: 에코 서약서 발급기 -->
+            <div class="bg-gradient-to-r from-amber-500 to-yellow-500 rounded-3xl p-4 text-white shadow-sm">
+                <h3 class="font-extrabold text-xs mb-1">📜 나만의 에코 실천 서약서</h3>
+                <p class="text-[11px] text-yellow-100 mb-3">6모둠 캠페인 참여 서약서를 발급받으세요!</p>
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/20 mb-3 space-y-2">
+                    <input type="text" id="pledge-name" placeholder="내 이름 입력 (예: 2학년 김민수)" class="w-full bg-white text-slate-900 text-xs px-3 py-2 rounded-xl focus:outline-none font-bold">
+                    <div id="pledge-card-preview" class="hidden bg-white text-slate-900 p-3 rounded-xl text-center border-2 border-dashed border-amber-300">
+                        <p class="text-[10px] text-amber-700 font-bold">🌟 SDGs 12 책임감 있는 소비 서약서 🌟</p>
+                        <p id="pledge-preview-text" class="text-xs font-black my-1">김민수 학생</p>
+                        <p class="text-[9px] text-slate-500">"나는 남김없이 다 먹고 일회용품을 줄이겠습니다!"</p>
+                        <p class="text-[9px] font-bold text-amber-600 mt-1">치이카와 도장 찍힘 ✓</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="generatePledge()" class="flex-grow py-2.5 rounded-xl bg-white text-amber-700 hover:bg-amber-50 font-black text-xs transition shadow-xs">
+                        ✨ 서약서 발급
+                    </button>
+                    <button onclick="downloadPledgeCard()" id="btn-download-pledge" class="hidden px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs transition">
+                        📥 저장
+                    </button>
+                </div>
+            </div>
+
+            <!-- 상점 -->
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-extrabold text-slate-900 text-xs">🎁 굿즈 포인트 상점</h3>
+                    <span class="font-black text-amber-600 text-xs" id="shop-points">350 P</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="border border-amber-200 bg-amber-50/30 rounded-2xl p-3 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xl block mb-1">🐻</span>
+                            <h4 class="font-bold text-slate-900 text-xs">치이카와 스티커</h4>
+                        </div>
+                        <button onclick="redeemReward('치이카와 스티커', 150)" class="mt-3 w-full py-2 rounded-xl bg-amber-600 text-white font-bold text-[11px]">150 P 교환</button>
+                    </div>
+                    <div class="border border-purple-200 bg-purple-50/30 rounded-2xl p-3 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xl block mb-1">🐿️</span>
+                            <h4 class="font-bold text-slate-900 text-xs">우선 배식 패스권</h4>
+                        </div>
+                        <button onclick="redeemReward('우선 배식 패스권', 200)" class="mt-3 w-full py-2 rounded-xl bg-purple-600 text-white font-bold text-[11px]">200 P 교환</button>
+                    </div>
+                </div>
+
+                <!-- 쿠폰함 -->
+                <div class="mt-4 pt-3 border-t border-slate-100">
+                    <h4 class="text-[11px] font-bold text-slate-700 mb-1.5">🎒 내 쿠폰 보관함</h4>
+                    <div id="my-coupons" class="flex flex-wrap gap-1.5 text-xs text-slate-400">
+                        <span id="empty-coupon-msg">교환한 쿠폰이 없습니다.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: 문제정의서 -->
+        <section id="tab-problem" class="hidden space-y-3 fade-in">
+            <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-2xs space-y-3">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                    <div class="w-10 h-10 rounded-xl sdg12-bg text-white flex flex-col items-center justify-center font-black text-xs shrink-0">
+                        <span>12</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-amber-600">6모둠 프로젝트 배경</span>
+                        <h2 class="text-sm font-extrabold text-slate-900">SDGs 문제 정의서</h2>
+                    </div>
+                </div>
+                <div class="bg-amber-50/60 rounded-2xl p-3 border border-amber-100">
+                    <h3 class="text-[11px] font-extrabold text-amber-800 mb-1">1. 문제 상황</h3>
+                    <p class="text-xs text-slate-700">학교 급식 잔반 및 일회용품 사용 과다</p>
+                </div>
+                <div class="bg-sky-50/60 rounded-2xl p-3 border border-sky-100">
+                    <h3 class="text-[11px] font-extrabold text-sky-800 mb-1">2. 불편한 대상</h3>
+                    <p class="text-xs text-slate-700">학생 및 직원들의 악취 및 처리 불편</p>
+                </div>
+                <div class="bg-emerald-50/70 rounded-2xl p-3 border border-emerald-100">
+                    <h3 class="text-[11px] font-extrabold text-emerald-700 mb-1">3. 기대 효과</h3>
+                    <p class="text-xs text-slate-700">쓰레기 감소 및 올바른 소비 습관 형성</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 모바일 하단 고정 네비게이션 바 (휴대폰 엄지손가락으로 누르기 가장 편한 위치) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around py-2 z-30 shadow-lg">
+        <button onclick="switchTab('home')" id="m-nav-home" class="flex flex-col items-center gap-0.5 text-amber-600 font-bold text-[11px] p-1 flex-1">
+            <span class="text-xl">🐻</span>
+            <span>오늘의 실천</span>
+        </button>
+        <button onclick="switchTab('stats')" id="m-nav-stats" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[11px] p-1 flex-1">
+            <span class="text-xl">🦦</span>
+            <span>학교 변화</span>
+        </button>
+        <button onclick="switchTab('shop')" id="m-nav-shop" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[11px] p-1 flex-1">
+            <span class="text-xl">🐰</span>
+            <span>상점·퀴즈</span>
+        </button>
+        <button onclick="switchTab('problem')" id="m-nav-problem" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium text-[11px] p-1 flex-1">
+            <span class="text-xl">🦁</span>
+            <span>정의서</span>
+        </button>
+    </nav>
+
+    <script>
+        let userPoints = 350;
+        let ourClassScore = 2450;
+        let classGoalPercent = 74;
+        let savedFoodKg = 142.5;
+        let savedCupCount = 618;
+        let currentModalMission = null;
+        let currentModalPoints = 0;
+        let quizSolved = false;
+        let streakDays = 4;
+        let todayStamped = false;
+        let hasVoted = false;
+        let selectedPartner = 'chiikawa';
+        let gameScore = 0;
+        let gameTimer = 10;
+        let gameInterval = null;
+
+        // 미니게임 로직
+        function startEcoGame() {
+            gameScore = 0;
+            gameTimer = 10;
+            document.getElementById('game-start-screen').classList.add('hidden');
+            document.getElementById('game-end-screen').classList.add('hidden');
+            document.getElementById('game-play-screen').classList.remove('hidden');
+            document.getElementById('game-score').textContent = gameScore;
+            document.getElementById('game-time').textContent = gameTimer;
+            moveMonster();
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(() => {
+                gameTimer--;
+                document.getElementById('game-time').textContent = gameTimer;
+                if (gameTimer <= 0) {
+                    clearInterval(gameInterval);
+                    endEcoGame();
+                }
+            }, 1000);
+        }
+
+        function moveMonster() {
+            const monster = document.getElementById('game-monster');
+            const emojis = ['🥦', '🥕', '🍎', '🥤', '🍔'];
+            monster.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            const randomX = Math.floor(Math.random() * 140) - 70;
+            const randomY = Math.floor(Math.random() * 40) - 20;
+            monster.style.transform = `translate(${randomX}px, ${randomY}px)`;
+        }
+
+        function hitMonster() {
+            gameScore += 10;
+            document.getElementById('game-score').textContent = gameScore;
+            moveMonster();
+        }
+
+        function endEcoGame() {
+            document.getElementById('game-play-screen').classList.add('hidden');
+            document.getElementById('game-end-screen').classList.remove('hidden');
+            const earned = gameScore * 2;
+            userPoints += earned;
+            updatePointsUI();
+            document.getElementById('game-result-msg').textContent = `게임 종료! 득점 ${gameScore}점 (+${earned}P 적립!)`;
+            showToast(`미니게임 보상 +${earned}P 획득!`, '🎮');
+        }
+
+        function equipAvatar(badgeIcon) {
+            showToast(`프로필에 [${badgeIcon}] 칭호가 장착되었습니다!`, '✨');
+        }
+
+        function downloadPledgeCard() {
+            showToast('서약서 이미지가 기기에 다운로드되었습니다! (시뮬레이션)', '📥');
+        }
+
+        const partnerData = {
+            chiikawa: { name: '치이카와', cheer: '"먹을 수 있는 만큼만 받아야 해!"' },
+            hachiware: { name: '하치와레', cheer: '"남기지 않고 먹으면 정말 뿌듯할 거야!"' },
+            usagi: { name: '우사기', cheer: '"야하~! 우라-! 깨끗하게 완식 도전!"' },
+            momonga: { name: '모몽가', cheer: '"내놔! 급식 한 톨도 안 남기고 내 거야!"' },
+            kurimanju: { name: '쿠리만주', cheer: '"크으~ 적당량 배식하고 다 먹는 게 최고지!"' },
+            rakko: { name: '랏코', cheer: '"음식을 아끼는 마음이야말로 진정한 강자!"' },
+            shisa: { name: '시사', cheer: '"열심히 분리수거하고 텀블러 사용해요!"' }
+        };
+
+        const floatingMessages = [
+            '🐰 우사기: "야하~! 오늘도 잔반 제로!"',
+            '🐻 치이카와: "먹을 만큼만 담았어!"',
+            '🐱 하치와레: "텀블러 쓰니까 지구가 웃고 있어!"',
+            '🐿️ 모몽가: "나 오늘 다 먹었어!"',
+            '🌰 쿠리만주: "잔반 없는 식판이 최고지!"'
+        ];
+
+        function cheerRandomCharacter() {
+            const msg = floatingMessages[Math.floor(Math.random() * floatingMessages.length)];
+            document.getElementById('floating-cheer-msg').textContent = msg;
+        }
+
+        const completedMissions = { food: false, cup: false };
+
+        function selectPartner(partnerKey) {
+            selectedPartner = partnerKey;
+            const p = partnerData[partnerKey];
+            document.getElementById('selected-char-name').textContent = p.name;
+            document.getElementById('partner-cheer-text').textContent = p.cheer;
+            document.getElementById('floating-cheer-msg').textContent = `${p.name}: ${p.cheer}`;
+
+            Object.keys(partnerData).forEach(k => {
+                const btn = document.getElementById(`partner-${k}`);
+                if (!btn) return;
+                if (k === partnerKey) {
+                    btn.className = "bg-white text-slate-900 py-1.5 rounded-xl text-[10px] font-bold flex flex-col items-center shadow-xs border-2 border-yellow-300";
+                } else {
+                    btn.className = "bg-white/20 text-white py-1.5 rounded-xl text-[10px] font-semibold flex flex-col items-center";
+                }
+            });
+            showToast(`파트너가 '${p.name}'(으)로 변경되었습니다!`, '🐻');
+        }
+
+        function updatePointsUI() {
+            document.getElementById('header-points').textContent = `${userPoints} P`;
+            const shopPointsEl = document.getElementById('shop-points');
+            if (shopPointsEl) shopPointsEl.textContent = `${userPoints} P`;
+        }
+
+        function showToast(message, icon = '🐻') {
+            const toastBox = document.getElementById('toast-box');
+            document.getElementById('toast-message').textContent = message;
+            document.getElementById('toast-icon').textContent = icon;
+            toastBox.classList.remove('hidden');
+            setTimeout(() => toastBox.classList.add('hidden'), 2200);
+        }
+
+        function switchTab(tabName) {
+            ['home', 'stats', 'shop', 'problem'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const mNav = document.getElementById(`m-nav-${t}`);
+                if (mNav) {
+                    mNav.classList.remove('text-amber-600', 'font-bold');
+                    mNav.classList.add('text-slate-400', 'font-medium');
+                }
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeMNav = document.getElementById(`m-nav-${tabName}`);
+            if (activeMNav) {
+                activeMNav.classList.add('text-amber-600', 'font-bold');
+                activeMNav.classList.remove('text-slate-400', 'font-medium');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openPhotoModal(type, points) {
+            if (completedMissions[type]) {
+                showToast('오늘 이미 완료한 미션입니다!', '🐻');
+                return;
+            }
+            currentModalMission = type;
+            currentModalPoints = points;
+            document.getElementById('photo-preview').classList.add('hidden');
+            document.getElementById('photo-placeholder').classList.remove('hidden');
+            document.getElementById('photo-input').value = '';
+            document.getElementById('photo-modal').classList.remove('hidden');
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photo-modal').classList.add('hidden');
+        }
+
+        function previewPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('photo-preview');
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                document.getElementById('photo-placeholder').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function submitPhotoMission() {
+            if (!currentModalMission) return;
+            closePhotoModal();
+            completeMission(currentModalMission, currentModalPoints);
+        }
+
+        function completeMission(type, points) {
+            if (completedMissions[type]) return;
+            completedMissions[type] = true;
+            userPoints += points;
+            ourClassScore += points;
+            updatePointsUI();
+            document.getElementById('rank-our-class-score').textContent = `${ourClassScore.toLocaleString()} P`;
+
+            if (!todayStamped) {
+                todayStamped = true;
+                streakDays += 1;
+                document.getElementById('streak-count').textContent = streakDays;
+                const friBox = document.getElementById('friday-stamp');
+                friBox.className = "bg-amber-50 border border-amber-300 rounded-xl py-1.5 text-center";
+                document.getElementById('friday-stamp-icon').textContent = '🐰';
+            }
+
+            const feedList = document.getElementById('activity-feed');
+            const newFeedItem = document.createElement('li');
+            newFeedItem.className = 'flex items-center justify-between py-1.5 border-b border-slate-100 bg-amber-50 px-2 rounded-lg text-[11px]';
+
+            if (type === 'food') {
+                document.getElementById('btn-mission-food').textContent = '완식 완료 ✓';
+                document.getElementById('btn-mission-food').className = 'px-4 py-2.5 rounded-2xl bg-slate-300 text-slate-600 font-bold text-xs shrink-0 cursor-default';
+                savedFoodKg = (parseFloat(savedFoodKg) + 0.3).toFixed(1);
+                document.getElementById('stat-food-kg').textContent = `${savedFoodKg} kg`;
+                newFeedItem.innerHTML = `<span class="text-slate-800"><strong class="text-amber-700">나</strong>님이 완식 인증 완료!</span><span class="text-amber-600 font-bold">방금 전</span>`;
+                showToast(`완식 인증 성공! +${points}P 적립!`, '🎉');
+            } else {
+                document.getElementById('btn-mission-cup').textContent = '인증 완료 ✓';
+                document.getElementById('btn-mission-cup').className = 'px-4 py-2.5 rounded-2xl bg-slate-300 text-slate-600 font-bold text-xs shrink-0 cursor-default';
+                savedCupCount += 1;
+                document.getElementById('stat-cup-count').textContent = `${savedCupCount} 개`;
+                newFeedItem.innerHTML = `<span class="text-slate-800"><strong class="text-amber-700">나</strong>님이 텀블러 인증 완료!</span><span class="text-amber-600 font-bold">방금 전</span>`;
+                showToast(`텀블러 인증 성공! +${points}P 적립!`, '💧');
+            }
+            feedList.prepend(newFeedItem);
+        }
+
+        function checkQuiz(isCorrect, btnEl) {
+            if (quizSolved) return;
+            if (isCorrect) {
+                quizSolved = true;
+                btnEl.className = "w-full text-left p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-900 font-bold text-xs";
+                document.getElementById('quiz-feedback').classList.remove('hidden');
+                userPoints += 30;
+                updatePointsUI();
+                showToast('정답입니다! +30P 적립!', '🧠');
+            } else {
+                btnEl.classList.add('border-rose-400', 'bg-rose-50');
+                showToast('다시 생각해 볼까요?', '🤔');
+            }
+        }
+
+        function redeemReward(itemName, cost) {
+            if (userPoints < cost) {
+                showToast(`포인트가 부족해요! (필요: ${cost}P)`, '⚠️');
+                return;
+            }
+            userPoints -= cost;
+            updatePointsUI();
+            const couponBox = document.getElementById('my-coupons');
+            const emptyMsg = document.getElementById('empty-coupon-msg');
+            if (emptyMsg) emptyMsg.remove();
+
+            const badge = document.createElement('span');
+            badge.className = 'bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-xl font-bold text-[11px]';
+            badge.textContent = `🎫 ${itemName}`;
+            couponBox.appendChild(badge);
+            showToast(`'${itemName}' 교환 완료!`, '🎁');
+        }
+
+        function askChatbot(type) {
+            const chatMessages = document.getElementById('chat-messages');
+            let botReply = '';
+            if (type === '잔반') {
+                botReply = '🐻 "먹을 만큼만 조금씩 담고, 남기지 않는 것이 최고의 지구 사랑이야! 야하~!"';
+            } else if (type === '플라스틱') {
+                botReply = '🐱 "플라스틱 컵은 깨끗이 씻어서 라벨을 떼고 분리배출해야 해!"';
+            } else {
+                botReply = '🐰 "텀블러는 사용 후 바로 물로 헹궈두면 세균 번식을 막을 수 있어!"';
+            }
+            const replyEl = document.createElement('div');
+            replyEl.className = 'bg-white p-2 rounded-xl border border-amber-200 shadow-2xs';
+            replyEl.innerHTML = `<p class="font-bold text-amber-800">🐻 치이카와 봇</p><p class="text-slate-700">${botReply}</p>`;
+            chatMessages.appendChild(replyEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function generatePledge() {
+            const nameInput = document.getElementById('pledge-name').value.trim();
+            if (!nameInput) {
+                showToast('이름을 입력해 주세요!', '⚠️');
+                return;
+            }
+            document.getElementById('pledge-preview-text').textContent = `${nameInput} 학생`;
+            document.getElementById('pledge-card-preview').classList.remove('hidden');
+            document.getElementById('btn-download-pledge').classList.remove('hidden');
+            showToast(`📜 [${nameInput}]님의 에코 서약서가 발급되었습니다!`, '🌟');
+        }
+
+        function addCheerMessage(event) {
+            event.preventDefault();
+            const input = document.getElementById('cheer-input');
+            const text = input.value.trim();
+            if (!text) return;
+            const cheerList = document.getElementById('cheer-list');
+            const card = document.createElement('div');
+            card.className = 'bg-amber-50 rounded-2xl p-3 border border-amber-100 text-xs text-slate-700';
+            card.innerHTML = `<p class="font-bold text-amber-900 text-[11px] mb-0.5">나 (6모둠)</p><p>"${text}"</p>`;
+            cheerList.prepend(card);
+            input.value = '';
+            showToast('응원 메시지가 등록되었습니다!', '💌');
+        }
+    </script>
+</body>
+</html>
